@@ -1,0 +1,33 @@
+@{
+    ViewData["Title"] = "Welcome";
+}
+
+<div class="text-center mt-5">
+    <h1 class="display-4">Descope Demo</h1>
+    <p class="lead mt-3">Your centralized portal for documents, settings, and team management.</p>
+    <hr class="my-4" />
+    <p class="text-muted">This demo showcases how to authenticate users with <strong>Descope</strong>, replacing both Azure AD OAuth and legacy local password authentication.</p>
+    <div class="mt-4">
+        <a class="btn btn-primary btn-lg" asp-controller="Auth" asp-action="Login">Sign In to Get Started</a>
+    </div>
+    <div class="row mt-5 justify-content-center">
+        <div class="col-md-4">
+            <div class="card"><div class="card-body">
+                <h5 class="card-title">Passwordless + SSO</h5>
+                <p class="card-text">Sign in with your password or corporate SSO — powered by Descope Flows.</p>
+            </div></div>
+        </div>
+        <div class="col-md-4">
+            <div class="card"><div class="card-body">
+                <h5 class="card-title">Dual Validation</h5>
+                <p class="card-text">Toggle between JwtBearer middleware and Descope SDK session validation.</p>
+            </div></div>
+        </div>
+        <div class="col-md-4">
+            <div class="card"><div class="card-body">
+                <h5 class="card-title">User Migration</h5>
+                <p class="card-text">Import existing users with hashed passwords using the included migration tool.</p>
+            </div></div>
+        </div>
+    </div>
+</div>

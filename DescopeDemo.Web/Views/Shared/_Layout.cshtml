@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Descope Demo</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        .hub-sidebar { min-height: calc(100vh - 56px); background-color: #f8f9fa; }
+        .hub-nav-link { color: #495057; padding: 0.75rem 1rem; display: block; text-decoration: none; border-left: 3px solid transparent; }
+        .hub-nav-link:hover, .hub-nav-link.active { background-color: #e9ecef; border-left-color: #0d6efd; color: #0d6efd; }
+        .app-tile { transition: box-shadow 0.15s; cursor: pointer; }
+        .app-tile:hover { box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.15); }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/"><strong>Descope</strong> Demo</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <li class="nav-item"><a class="nav-link" asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Documents" asp-action="Index">Documents</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Settings" asp-action="Index">Settings</a></li>
+                    }
+                </ul>
+                <ul class="navbar-nav">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <li class="nav-item">
+                            <span class="nav-link text-light">@(User.Identity.Name ?? User.FindFirst("sub")?.Value ?? "User")</span>
+                        </li>
+                        <li class="nav-item">
+                            <form asp-controller="Auth" asp-action="Logout" method="post" class="d-inline">
+                                <button type="submit" class="nav-link btn btn-link text-light">Logout</button>
+                            </form>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item"><a class="nav-link" asp-controller="Auth" asp-action="Login">Sign In</a></li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container-fluid">
+        <div class="row">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <nav class="col-md-2 d-none d-md-block hub-sidebar pt-3">
+                    <a class="hub-nav-link" asp-controller="Dashboard" asp-action="Index">Dashboard</a>
+                    <a class="hub-nav-link" asp-controller="Documents" asp-action="Index">Documents</a>
+                    <a class="hub-nav-link" asp-controller="Settings" asp-action="Index">Settings</a>
+                </nav>
+                <main class="col-md-10 ms-sm-auto px-4 py-3">@RenderBody()</main>
+            }
+            else
+            {
+                <main class="col-12 px-4 py-3">@RenderBody()</main>
+            }
+        </div>
+    </div>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

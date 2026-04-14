@@ -1,0 +1,11 @@
+Email,DisplayName,PasswordHash,HashAlgorithm,Roles
+alice.tanaka@corp.example,Alice Tanaka,$2b$10$DK.J37vwX1fBWDpRfPpYS.KuxKAWHMejqqMYZwnLB4ECSAF/tv1Bq,bcrypt,admin
+bob.mueller@corp.example,Bob Mueller,$2b$10$52UYTUWWslpfK8DAiX6U7e5dZCS/fVg0f.uALB8pdVaUp45e0S706,bcrypt,viewer
+carol.johnson@corp.example,Carol Johnson,$2b$10$PdPfAdESN0u3ToNS55BcRe7/U6WN9e.4c1bw19zyjcariPwPReB.i,bcrypt,admin
+dave.kim@corp.example,Dave Kim,$2b$10$Eknvk.7b3iKqsyVQOOKDTe3VE61A8ToFPjK5YV5HFgwHtbFx80Mji,bcrypt,viewer
+elena.garcia@corp.example,Elena Garcia,$2b$10$X2A30WF6QVeObtbjyeSP1.0Obte3tPeiGKI9Pkhk8Zm8bsUNQwI3q,bcrypt,viewer
+frank.chen@corp.example,Frank Chen,$2b$10$lvNUe8uKp1u4OXEyFwmuYOaTDJyEZwhYHM2DzBJS4DWOu7QyHIqG.,bcrypt,admin
+grace.wilson@corp.example,Grace Wilson,$2b$10$mHhfOkzbqS6zufQ3oXmEwOt522VJOKxErVSJshHjfmpDxVuetgMEC,bcrypt,viewer
+hiro.sato@corp.example,Hiro Sato,$2b$10$fXneqJGhTSlJ92v6AL9he.lir3XPYY3fQw3J/jb.5dygc2nJ80alO,bcrypt,viewer
+iris.patel@corp.example,Iris Patel,$2b$10$fqG5bYWuc2uvSP.jzyQQQO/nQHwZf8fLZbLKsIkNaxd7a/mtklQ/W,bcrypt,admin
+james.brown@corp.example,James Brown,$2b$10$PGWqJOQv.H4sYX2hGUwtBeZ.tVP2BAcilCw6SVtXMF19wfgKTXzuO,bcrypt,viewer

@@ -1,0 +1,12 @@
+@{
+    ViewData["Title"] = "My Profile";
+}
+
+<h2>My Profile</h2>
+<div class="card mt-3" style="max-width: 400px;">
+    <div class="card-body">
+        <h5 class="card-title">@ViewBag.Name</h5>
+        <p class="card-text"><strong>Email:</strong> @ViewBag.Email</p>
+    </div>
+</div>
+<p class="text-success mt-3">You are authenticated. This page is protected by Descope.</p>

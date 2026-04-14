@@ -1,0 +1,32 @@
+@{ ViewData["Title"] = "Settings"; }
+<h2>Settings</h2>
+<p class="text-muted">Portal configuration and authentication settings.</p>
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card"><div class="card-header"><h5 class="mb-0">Authentication Configuration</h5></div>
+        <div class="card-body"><dl class="row mb-0">
+            <dt class="col-sm-5">Provider</dt><dd class="col-sm-7">Descope</dd>
+            <dt class="col-sm-5">Project ID</dt><dd class="col-sm-7"><code>@ViewBag.ProjectId</code></dd>
+            <dt class="col-sm-5">Validation Mode</dt><dd class="col-sm-7"><span class="badge bg-primary">@ViewBag.ValidationMode</span></dd>
+            <dt class="col-sm-5">OIDC Authority</dt><dd class="col-sm-7"><code>@ViewBag.Authority</code></dd>
+            <dt class="col-sm-5">Flow ID</dt><dd class="col-sm-7"><code>sign-up-or-in-passwords</code></dd>
+        </dl></div></div>
+    </div>
+    <div class="col-md-6">
+        <div class="card"><div class="card-header"><h5 class="mb-0">What Was Replaced</h5></div>
+        <div class="card-body">
+            <h6>Azure AD OAuth 2.0 (Digital Hub Portal)</h6>
+            <ul>
+                <li><code>AddMicrosoftIdentityWebApp()</code> &rarr; Descope JwtBearer / SDK</li>
+                <li>Azure App Registration &rarr; Descope Project</li>
+                <li>Azure redirect URIs &rarr; Descope Flows callback</li>
+            </ul>
+            <h6>Local Password Auth (Legacy Apps)</h6>
+            <ul>
+                <li>SQL user table with hashed passwords &rarr; Descope user store</li>
+                <li>Custom login controller &rarr; Descope <code>&lt;descope-wc&gt;</code> component</li>
+                <li>Password hashing (bcrypt/PBKDF2) &rarr; Migrated to Descope</li>
+            </ul>
+        </div></div>
+    </div>
+</div>

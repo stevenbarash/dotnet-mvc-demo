@@ -1,0 +1,88 @@
+@*
+    ==========================================================================
+    Dashboard/Index.cshtml — Authenticated dashboard with tenant SSO app tiles
+    ==========================================================================
+    This view demonstrates two Descope features:
+      1. Tenant SSO Apps — clickable tiles that launch IdP-initiated SSO
+      2. JWT Claims — displays all claims from the Descope session token,
+         showing what user/tenant data is available after authentication
+    ==========================================================================
+*@
+
+@using DescopeDemo.Web.Models
+@{
+    ViewData["Title"] = "Dashboard";
+    var apps = ViewBag.Apps as IReadOnlyList<TenantApp> ?? Array.Empty<TenantApp>();
+    var appError = ViewBag.AppError as string;
+}
+<h2>Dashboard</h2>
+<p class="text-muted">Welcome to the Descope Demo. Session validated via <strong>@ViewBag.ValidationMode</strong> mode.</p>
+
+@* --- Tenant SSO App Tiles ---
+   Each tile represents an SSO app configured for the user's tenant in Descope.
+   Clicking a tile opens the app via IdP-initiated SSO — the user doesn't need
+   to enter credentials again because Descope handles the federation. *@
+<div class="row mt-4">
+    <div class="col-12">
+        <h5 class="mb-3">Your Applications</h5>
+        @if (!string.IsNullOrEmpty(appError))
+        {
+            <div class="alert alert-warning">@appError</div>
+        }
+        else if (apps.Count == 0)
+        {
+            <div class="alert alert-info">No applications available</div>
+        }
+        else
+        {
+            <div class="row">
+                @foreach (var app in apps)
+                {
+                    if (string.IsNullOrEmpty(app.IdpInitiatedUrl)) continue;
+                    <div class="col-md-4 col-lg-3 mb-3">
+                        <a href="@app.IdpInitiatedUrl" target="_blank" class="text-decoration-none">
+                            <div class="card h-100 text-center p-3 app-tile">
+                                @if (!string.IsNullOrEmpty(app.Logo))
+                                {
+                                    <img src="@app.Logo" alt="@app.Name" class="mx-auto mb-2" style="max-height:48px; max-width:48px;" />
+                                }
+                                else
+                                {
+                                    <div class="mx-auto mb-2 d-flex align-items-center justify-content-center bg-secondary text-white rounded" style="width:48px; height:48px; font-size:1.5rem;">
+                                        @app.Name.Substring(0, 1).ToUpper()
+                                    </div>
+                                }
+                                <h6 class="card-title mb-0">@app.Name</h6>
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@* --- User Profile & JWT Claims ---
+   This section shows the authenticated user's identity and all JWT claims from
+   the Descope token. Useful for debugging and demonstrating what data Descope
+   provides: user ID (sub), tenant IDs (dct, tenants), roles, permissions, etc. *@
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card"><div class="card-header"><h5 class="mb-0">User Profile</h5></div>
+        <div class="card-body"><dl class="row mb-0">
+            <dt class="col-sm-4">Authenticated</dt><dd class="col-sm-8">@User.Identity?.IsAuthenticated</dd>
+            <dt class="col-sm-4">Name</dt><dd class="col-sm-8">@(User.Identity?.Name ?? "N/A")</dd>
+            <dt class="col-sm-4">Auth Type</dt><dd class="col-sm-8">@(User.Identity?.AuthenticationType ?? "N/A")</dd>
+        </dl></div></div>
+    </div>
+    <div class="col-md-6">
+        <div class="card"><div class="card-header"><h5 class="mb-0">JWT Claims</h5></div>
+        <div class="card-body"><table class="table table-sm table-striped mb-0">
+            <thead><tr><th>Claim Type</th><th>Value</th></tr></thead>
+            <tbody>
+                @foreach (var claim in User.Claims)
+                { <tr><td><code>@claim.Type</code></td><td>@claim.Value</td></tr> }
+            </tbody>
+        </table></div></div>
+    </div>
+</div>

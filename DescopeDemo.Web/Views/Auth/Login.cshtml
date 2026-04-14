@@ -1,0 +1,84 @@
+@*
+    ==========================================================================
+    Login.cshtml — Descope Web Component integration
+    ==========================================================================
+    This is the core of the Descope frontend integration. Instead of building
+    a custom login form with username/password fields, validation logic, error
+    handling, SSO buttons, MFA prompts, etc., we drop in Descope's Web Component
+    (<descope-wc>) which handles ALL of that automatically.
+
+    The Web Component renders whatever authentication flow you've configured
+    in the Descope Console (passwords, magic links, SSO, passkeys, MFA, etc.)
+    — no frontend code changes needed when you add or change auth methods.
+
+    FLOW:
+      1. Page loads → <descope-wc> renders the login UI from your Descope Flow
+      2. User authenticates → Descope fires a "success" event with JWTs
+      3. JavaScript copies the JWTs into a hidden form and submits to /Auth/Callback
+      4. AuthController.Callback stores the JWTs as HttpOnly cookies
+      5. User is redirected to the dashboard, fully authenticated
+    ==========================================================================
+*@
+
+@{
+    ViewData["Title"] = "Sign In";
+    Layout = "_Layout";
+}
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <h2 class="card-title text-center mb-4">Descope Demo</h2>
+                <p class="text-center text-muted mb-4">Sign in to access the portal</p>
+
+                @* The Descope Web Component will render here — it replaces an
+                   entire custom login form with a single element *@
+                <div id="descope-login"></div>
+
+                @* Hidden form that receives the JWTs from Descope and posts them
+                   to our server. We use a form POST (not fetch/XHR) so the server
+                   can set HttpOnly cookies in the response — JavaScript can't
+                   access HttpOnly cookies, which protects against XSS attacks. *@
+                <form id="callback-form" method="post" action="/Auth/Callback" style="display:none;">
+                    <input type="hidden" name="sessionToken" id="sessionToken" />
+                    <input type="hidden" name="refreshToken" id="refreshToken" />
+                    <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @* Load the Descope Web Component and JS SDK from CDN.
+       These two scripts are the only frontend dependencies needed for Descope. *@
+    <script src="https://unpkg.com/@@descope/web-component@@latest/dist/index.js"></script>
+    <script src="https://unpkg.com/@@descope/web-js-sdk@@latest/dist/index.umd.js"></script>
+    <script>
+        // Create and configure the Descope Web Component.
+        // project-id: Your Descope project (from appsettings.json → ViewBag)
+        // flow-id:    Which Descope Flow to render (configured in Descope Console)
+        //             "sign-up-or-in-passwords" handles both sign-up and sign-in
+        const container = document.getElementById('descope-login');
+        const wcElement = document.createElement('descope-wc');
+        wcElement.setAttribute('project-id', '@ViewBag.ProjectId');
+        wcElement.setAttribute('flow-id', 'sign-up-or-in-passwords');
+
+        // On successful authentication, Descope provides sessionJwt (short-lived)
+        // and refreshJwt (long-lived). We submit these to our server via the
+        // hidden form so AuthController.Callback can store them as cookies.
+        wcElement.addEventListener('success', (e) => {
+            const detail = e.detail;
+            document.getElementById('sessionToken').value = detail?.sessionJwt || '';
+            document.getElementById('refreshToken').value = detail?.refreshJwt || '';
+            document.getElementById('callback-form').submit();
+        });
+
+        wcElement.addEventListener('error', (e) => {
+            console.error('Descope authentication error:', e.detail);
+        });
+
+        container.appendChild(wcElement);
+    </script>
+}
