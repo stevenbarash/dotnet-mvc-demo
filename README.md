@@ -82,15 +82,17 @@ Browser                         ASP.NET Core                        Descope
 
 Set `Authentication:ValidationMode` in `appsettings.json`:
 
-- **`JwtBearer`** (default) — Uses ASP.NET Core's built-in JWT middleware. Descope issues standard JWTs, so no Descope-specific code is needed at validation time. Best for most apps.
-- **`DescopeSdk`** — Uses the Descope SDK's `ValidateSessionAsync()` via a custom `AuthenticationHandler`. Useful for accessing Descope-specific token features like permissions or step-up auth.
+- **`JwtBearer`** — Uses ASP.NET Core's built-in JWT middleware. Descope issues standard JWTs, so no Descope-specific code is needed at validation time. Ideal when migrating an existing codebase to Descope — swap the identity provider with minimal code changes while keeping familiar .NET auth patterns.
+- **`DescopeSdk`** (recommended for new projects) — Uses the Descope SDK's `ValidateSessionAsync()` via a custom `AuthenticationHandler`. Provides access to Descope-specific features like permissions, step-up auth, and richer session management.
 
 ### Cookie Strategy
 
-| Cookie | Contents | Lifetime | Purpose |
-|--------|----------|----------|---------|
-| `DS` | Session JWT | 1 hour | Validated on every request |
-| `DSR` | Refresh token | 30 days | Used to silently obtain new session JWTs |
+| Cookie | Contents | Purpose |
+|--------|----------|---------|
+| `DS` | Session JWT | Validated on every request |
+| `DSR` | Refresh token | Used to silently obtain new session JWTs |
+
+Session and refresh token lifetimes are configurable in the [Descope Console](https://app.descope.com/) under **Project Settings > Session Management > Token Expiration**. Session token timeout must be at least 3 minutes; refresh token timeout controls how long before the user must log in again. These can also be overridden per-tenant.
 
 Both cookies are `HttpOnly` (no JavaScript access), `Secure` in production, and `SameSite=Strict`.
 
