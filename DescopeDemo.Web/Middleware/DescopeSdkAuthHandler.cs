@@ -79,11 +79,17 @@ public class DescopeSdkAuthHandler : AuthenticationHandler<AuthenticationSchemeO
             {
                 foreach (var kvp in token.Claims)
                 {
-                    claims.Add(new Claim(kvp.Key, kvp.Value?.ToString() ?? ""));
+                    var claimType = kvp.Key switch
+                    {
+                        "name" => ClaimTypes.Name,
+                        "email" => ClaimTypes.Email,
+                        _ => kvp.Key
+                    };
+                    claims.Add(new Claim(claimType, kvp.Value?.ToString() ?? ""));
                 }
             }
 
-            var identity = new ClaimsIdentity(claims, Scheme.Name);
+            var identity = new ClaimsIdentity(claims, Scheme.Name, ClaimTypes.Name, ClaimTypes.Role);
             var principal = new ClaimsPrincipal(identity);
             var ticket = new AuthenticationTicket(principal, Scheme.Name);
 
