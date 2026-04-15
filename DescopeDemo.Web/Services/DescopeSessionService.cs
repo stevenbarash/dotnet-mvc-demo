@@ -14,7 +14,6 @@
 
 using System.Net.Http.Headers;
 using System.Text;
-using System.Text.Json;
 using Descope;
 
 namespace DescopeDemo.Web.Services;
@@ -31,33 +30,30 @@ public interface IDescopeSessionService
     Task LogoutAsync(string refreshJwt);
 }
 
-public class DescopeSessionService : IDescopeSessionService
+public sealed class DescopeSessionService : IDescopeSessionService
 {
     private readonly IDescopeClient _client;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _configuration;
     private readonly ILogger<DescopeSessionService> _logger;
 
-    public DescopeSessionService(IDescopeClient client, IConfiguration configuration, ILogger<DescopeSessionService> logger)
+    public DescopeSessionService(
+        IDescopeClient client,
+        IHttpClientFactory httpClientFactory,
+        IConfiguration configuration,
+        ILogger<DescopeSessionService> logger)
     {
         _client = client;
+        _httpClientFactory = httpClientFactory;
         _configuration = configuration;
         _logger = logger;
     }
 
-    /// <summary>
-    /// Validates a session JWT using the Descope SDK. The SDK automatically
-    /// fetches and caches the project's public keys for signature verification.
-    /// </summary>
     public async Task<Token> ValidateSessionAsync(string sessionJwt)
     {
         return await _client.Auth.ValidateSessionAsync(sessionJwt);
     }
 
-    /// <summary>
-    /// Exchanges a refresh token for a new session JWT. Called by
-    /// CookieToAuthHeaderMiddleware when the session cookie has expired but the
-    /// refresh cookie is still valid — keeps the user logged in seamlessly.
-    /// </summary>
     public async Task<Token> RefreshSessionAsync(string refreshJwt)
     {
         return await _client.Auth.RefreshSessionAsync(refreshJwt);
@@ -65,18 +61,19 @@ public class DescopeSessionService : IDescopeSessionService
 
     /// <summary>
     /// Calls the Descope logout API to invalidate the refresh token server-side.
-    /// This ensures the token can't be reused even if someone captured it.
+    /// Uses IHttpClientFactory to avoid socket exhaustion from repeated allocations.
     /// The Authorization header format is "Bearer {projectId}:{refreshToken}"
     /// as required by Descope's REST API.
     /// </summary>
     public async Task LogoutAsync(string refreshJwt)
     {
         var projectId = _configuration["Descope:ProjectId"] ?? "";
-        using var httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", $"{projectId}:{refreshJwt}");
-        var content = new StringContent("{}", Encoding.UTF8, "application/json");
-        var response = await httpClient.PostAsync("https://api.descope.com/v1/auth/logout", content);
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/v1/auth/logout");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", $"{projectId}:{refreshJwt}");
+        request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
+
+        var httpClient = _httpClientFactory.CreateClient("DescopeManagement");
+        var response = await httpClient.SendAsync(request);
         if (response.IsSuccessStatusCode)
         {
             _logger.LogInformation("User logged out successfully");

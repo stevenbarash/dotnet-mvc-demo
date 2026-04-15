@@ -24,7 +24,7 @@ using DescopeDemo.Web.Services;
 
 namespace DescopeDemo.Web.Middleware;
 
-public class CookieToAuthHeaderMiddleware
+public sealed class CookieToAuthHeaderMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly IWebHostEnvironment _environment;

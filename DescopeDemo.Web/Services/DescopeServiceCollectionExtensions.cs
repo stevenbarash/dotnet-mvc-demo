@@ -1,30 +1,37 @@
-// =============================================================================
-// DescopeServiceCollectionExtensions.cs — DI registration for Descope services
-// =============================================================================
-// Registers the named HttpClient for the Descope Management API and the
-// DescopeAppService. Called from Program.cs as builder.Services.AddDescopeAppServices().
-//
-// Uses a named HttpClient ("DescopeManagement") so the base address is configured
-// once and the HttpClientFactory handles connection pooling and lifetime.
-// =============================================================================
+using DescopeDemo.Web.Models;
+using Descope;
 
 namespace DescopeDemo.Web.Services;
 
 public static class DescopeServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers the Descope Management API HttpClient and app discovery service.
-    /// Call this in Program.cs to enable the dashboard's tenant app tiles feature.
+    /// Registers all Descope services: SDK client, session management, Management
+    /// API HttpClient, and app discovery. Binds and validates configuration on startup.
     /// </summary>
-    public static IServiceCollection AddDescopeAppServices(this IServiceCollection services)
+    public static IServiceCollection AddDescopeServices(this IServiceCollection services, IConfiguration configuration)
     {
-        // Named HttpClient for the Descope Management API (https://api.descope.com).
-        // IHttpClientFactory manages connection pooling and DNS rotation automatically.
+        services.AddOptions<DescopeOptions>()
+            .BindConfiguration(DescopeOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddOptions<AuthenticationOptions>()
+            .BindConfiguration(AuthenticationOptions.SectionName);
+
+        var descopeProjectId = configuration[DescopeOptions.SectionName + ":ProjectId"] ?? "";
+
+        services.AddDescopeClient(new DescopeClientOptions
+        {
+            ProjectId = descopeProjectId
+        });
+
         services.AddHttpClient("DescopeManagement", client =>
         {
             client.BaseAddress = new Uri("https://api.descope.com");
         });
 
+        services.AddScoped<IDescopeSessionService, DescopeSessionService>();
         services.AddScoped<IDescopeAppService, DescopeAppService>();
 
         return services;

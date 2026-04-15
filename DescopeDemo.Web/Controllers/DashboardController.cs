@@ -21,7 +21,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace DescopeDemo.Web.Controllers;
 
 [Authorize] // Requires a valid Descope session — unauthenticated users are redirected to /Auth/Login
-public class DashboardController : Controller
+public sealed class DashboardController : Controller
 {
     private readonly IConfiguration _configuration;
     private readonly IDescopeAppService _appService;

@@ -1,6 +1,6 @@
 namespace DescopeDemo.Migration.Models;
 
-public class LegacyUser
+public sealed class LegacyUser
 {
     public string Email { get; set; } = "";
     public string DisplayName { get; set; } = "";

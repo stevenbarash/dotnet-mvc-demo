@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace DescopeDemo.Web.Controllers;
 
 [Authorize]
-public class SettingsController : Controller
+public sealed class SettingsController : Controller
 {
     private readonly IConfiguration _configuration;
     public SettingsController(IConfiguration configuration) { _configuration = configuration; }

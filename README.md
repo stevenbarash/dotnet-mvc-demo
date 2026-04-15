@@ -69,7 +69,9 @@ Browser                         ASP.NET Core                        Descope
 
 | File | Purpose |
 |------|---------|
-| [`Program.cs`](DescopeDemo.Web/Program.cs) | Registers the Descope SDK, configures JWT or SDK auth, wires up middleware |
+| [`Program.cs`](DescopeDemo.Web/Program.cs) | Configures JWT or SDK auth, wires up middleware pipeline |
+| [`Services/DescopeServiceCollectionExtensions.cs`](DescopeDemo.Web/Services/DescopeServiceCollectionExtensions.cs) | `AddDescopeServices()` — registers all Descope services with validated config |
+| [`Models/DescopeOptions.cs`](DescopeDemo.Web/Models/DescopeOptions.cs) | Strongly-typed Descope configuration with startup validation |
 | [`Views/Auth/Login.cshtml`](DescopeDemo.Web/Views/Auth/Login.cshtml) | Embeds the `<descope-wc>` Web Component — replaces all custom login UI |
 | [`Controllers/AuthController.cs`](DescopeDemo.Web/Controllers/AuthController.cs) | Handles login page, token callback (stores cookies), and logout |
 | [`Middleware/CookieToAuthHeaderMiddleware.cs`](DescopeDemo.Web/Middleware/CookieToAuthHeaderMiddleware.cs) | Bridges browser cookies to Bearer tokens for JwtBearer validation; handles silent token refresh |
@@ -96,6 +98,60 @@ Session and refresh token lifetimes are configurable in the [Descope Console](ht
 
 Both cookies are `HttpOnly` (no JavaScript access), `Secure` in production, and `SameSite=Strict`.
 
+### JWT Templates & Custom Claims
+
+Descope's default session JWT only contains structural claims (`sub`, `iss`, `exp`, `iat`, `aud`, `dct`, `tenants`, `roles`, `permissions`). User profile fields like `name` and `email` are **not included by default** — you need to configure them explicitly via a [JWT Template](https://docs.descope.com/management/jwt-templates) or a [Custom Claims action](https://docs.descope.com/flows/actions/custom-claims) in your flow.
+
+**This demo requires a JWT Template** so that `User.Identity.Name` and email display correctly in the navbar and dashboard.
+
+#### Setting Up the JWT Template
+
+1. In the [Descope Console](https://app.descope.com/settings/project/jwt), go to **Project Settings > JWT Templates**
+2. Click **+ JWT Template** and select **Default User JWT**
+3. Under **Custom Claims**, add dynamic values:
+
+| Claim Key | Dynamic Value | Description |
+|-----------|---------------|-------------|
+| `name` | `user.name` | User's display name |
+| `email` | `user.email` | User's email address |
+
+4. Go to **Project Settings > Session Management** and set the **User JWT Token Format** to the template you created
+5. Click **Save**
+
+Other useful dynamic values you can add include `user.phone`, `user.picture`, `user.givenName`, `user.familyName`, `user.customAttributes.<name>`, and `tenant.name`. See the [Dynamic Keys reference](https://docs.descope.com/flows/dynamic-keys) for the full list.
+
+#### JWT Templates vs Custom Claims in Flows
+
+Descope provides two ways to add claims to JWTs:
+
+| Approach | Scope | Best For |
+|----------|-------|----------|
+| **[JWT Templates](https://docs.descope.com/management/jwt-templates)** | Project-wide, applied to all JWTs | Consistent claims needed across all flows (name, email, tenant info) |
+| **[Custom Claims in Flows](https://docs.descope.com/flows/actions/custom-claims)** | Per-flow, applied during flow execution | Flow-specific data (step-up auth context, conditional claims) |
+
+Custom claims set in a flow override JWT Template values for the same key. Both approaches produce secure claims (not placed in the `nsec` envelope that client-added claims use).
+
+#### Authorization Claims Configuration
+
+JWT Templates also let you control how authorization claims (roles, permissions, tenants) are structured:
+
+- **Default Descope JWT** — Project-level roles in the root, tenant-specific roles nested inside each tenant object
+- **Current Tenant, No Tenant Reference** — Tenant-specific roles appear at the root, omitting the `tenants` claim (useful for API gateways that can't parse nested JSON)
+- **No Descope Claims** — Excludes all Descope authorization claims, only including your custom claims
+
+#### How This Demo Handles Claim Mapping
+
+In **JwtBearer mode**, ASP.NET Core's JwtBearer handler automatically maps the JWT `name` claim to `ClaimTypes.Name` via standard OIDC claim mapping — no code changes needed once the JWT Template is configured.
+
+In **DescopeSdk mode**, the [`DescopeSdkAuthHandler`](DescopeDemo.Web/Middleware/DescopeSdkAuthHandler.cs) explicitly maps `name` → `ClaimTypes.Name` and `email` → `ClaimTypes.Email` when building the `ClaimsPrincipal`, and configures the `ClaimsIdentity` with the correct name/role claim types.
+
+#### Important Notes
+
+- **Dynamic claims auto-refresh**: When a user attribute used as a custom claim changes, the JWT reflects the new value on the next session refresh — no extra API calls needed.
+- **Cookie size limit**: Custom claims increase token size. Browsers enforce a 4KB cookie limit, so avoid storing large payloads. Keep claims minimal ([security best practices](https://docs.descope.com/security-best-practices/custom-claims)).
+- **Never store sensitive data in JWTs**: JWTs are Base64-encoded (not encrypted). Don't put secrets, passwords, or sensitive PII in custom claims.
+- **Terraform support**: JWT Templates can be managed as code via the [Descope Terraform provider](https://docs.descope.com/managing-environments/terraform).
+
 ## Key Features
 
 - **Descope Flows** — `sign-up-or-in-passwords` flow embedded via the `<descope-wc>` Web Component — zero custom login UI code
@@ -103,6 +159,17 @@ Both cookies are `HttpOnly` (no JavaScript access), `Secure` in production, and 
 - **Tenant SSO App Tiles** — Dashboard discovers and displays a tenant's SSO apps from the Descope Management API with IdP-initiated SSO links
 - **Silent Token Refresh** — Middleware automatically refreshes expired sessions using the refresh token
 - **User Migration** — Bulk import users with bcrypt/PBKDF2/argon2 hashed passwords via the included CLI tool
+
+## Project Structure
+
+The solution follows .NET best practices:
+
+- **`Directory.Build.props`** — Centralizes build settings (`TreatWarningsAsErrors`, `Nullable`, `LangVersion`) across all projects
+- **`Directory.Packages.props`** — Central Package Management (CPM) — all NuGet versions in one file
+- **`global.json`** — Pins .NET SDK version for consistent builds
+- **Strongly-typed configuration** — `DescopeOptions` validated at startup via `ValidateOnStart()` (fail fast on misconfiguration)
+- **Sealed classes** — All types sealed by default for JIT devirtualization and clear API intent
+- **`IHttpClientFactory`** — All HTTP calls use factory-managed clients (no socket exhaustion)
 
 ## Documentation
 

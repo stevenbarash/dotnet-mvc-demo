@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DescopeDemo.Web.Controllers;
 
-public class HomeController : Controller
+public sealed class HomeController : Controller
 {
     /// <summary>
     /// Shows the public landing page. If the user already has a valid Descope

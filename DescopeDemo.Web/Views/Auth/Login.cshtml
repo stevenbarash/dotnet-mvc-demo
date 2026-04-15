@@ -41,6 +41,7 @@
                    can set HttpOnly cookies in the response — JavaScript can't
                    access HttpOnly cookies, which protects against XSS attacks. *@
                 <form id="callback-form" method="post" action="/Auth/Callback" style="display:none;">
+                    @Html.AntiForgeryToken()
                     <input type="hidden" name="sessionToken" id="sessionToken" />
                     <input type="hidden" name="refreshToken" id="refreshToken" />
                     <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
@@ -53,8 +54,8 @@
 @section Scripts {
     @* Load the Descope Web Component and JS SDK from CDN.
        These two scripts are the only frontend dependencies needed for Descope. *@
-    <script src="https://unpkg.com/@@descope/web-component@@latest/dist/index.js"></script>
-    <script src="https://unpkg.com/@@descope/web-js-sdk@@latest/dist/index.umd.js"></script>
+    <script src="https://unpkg.com/@@descope/web-component@@3.57.1/dist/index.js"></script>
+    <script src="https://unpkg.com/@@descope/web-js-sdk@@1.47.0/dist/index.umd.js"></script>
     <script>
         // Create and configure the Descope Web Component.
         // project-id: Your Descope project (from appsettings.json → ViewBag)

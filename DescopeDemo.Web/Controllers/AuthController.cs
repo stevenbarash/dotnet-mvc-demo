@@ -20,7 +20,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DescopeDemo.Web.Controllers;
 
-public class AuthController : Controller
+public sealed class AuthController : Controller
 {
     private readonly IDescopeSessionService _sessionService;
     private readonly IConfiguration _configuration;
@@ -49,7 +49,7 @@ public class AuthController : Controller
         // Pass the Project ID to the view so the Descope Web Component knows
         // which Descope project to authenticate against.
         ViewBag.ProjectId = _configuration["Descope:ProjectId"];
-        ViewBag.ReturnUrl = returnUrl ?? "/Dashboard";
+        ViewBag.ReturnUrl = !string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) ? returnUrl : "/Dashboard";
         return View();
     }
 
@@ -66,6 +66,7 @@ public class AuthController : Controller
     /// sets it as a Bearer token so ASP.NET Core's JwtBearer handler can validate it.
     /// </summary>
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public IActionResult Callback([FromForm] string sessionToken, [FromForm] string refreshToken, [FromForm] string? returnUrl)
     {
         if (string.IsNullOrEmpty(sessionToken))
@@ -84,7 +85,8 @@ public class AuthController : Controller
             Response.Cookies.Append("DSR", refreshToken, DescopeCookieOptions.Create(isDev, TimeSpan.FromDays(30)));
         }
 
-        return Redirect(returnUrl ?? "/Dashboard");
+        var safeUrl = !string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) ? returnUrl : "/Dashboard";
+        return Redirect(safeUrl);
     }
 
     /// <summary>
@@ -95,6 +97,7 @@ public class AuthController : Controller
     /// someone captured it.
     /// </summary>
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()
     {
         var refreshToken = Request.Cookies["DSR"];

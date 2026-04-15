@@ -5,14 +5,14 @@ using DescopeDemo.Migration.Models;
 
 namespace DescopeDemo.Migration.Services;
 
-public class MigrationReport
+public sealed class MigrationReport
 {
     public int Created { get; set; }
     public int Failed { get; set; }
     public List<string> Errors { get; set; } = new();
 }
 
-public class DescopeMigrationService
+public sealed class DescopeMigrationService
 {
     private readonly string _projectId;
     private readonly string _managementKey;

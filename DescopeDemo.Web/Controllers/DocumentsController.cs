@@ -13,7 +13,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace DescopeDemo.Web.Controllers;
 
 [Authorize] // This single attribute protects the entire controller with Descope auth
-public class DocumentsController : Controller
+public sealed class DocumentsController : Controller
 {
     public IActionResult Index() => View();
 }

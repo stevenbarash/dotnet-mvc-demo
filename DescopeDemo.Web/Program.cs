@@ -3,13 +3,12 @@
 // =============================================================================
 // This file shows everything needed to integrate Descope into a .NET 8 MVC app.
 // The key integration points are:
-//   1. Register the Descope SDK client (for session validation & refresh)
+//   1. Register Descope services (SDK client, session, Management API)
 //   2. Configure authentication (choose between JwtBearer or Descope SDK mode)
 //   3. Add cookie-to-header middleware (bridges browser cookies to Bearer tokens)
 // =============================================================================
 
 using DescopeDemo.Web.Services;
-using Descope;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,43 +16,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 // ---------------------------------------------------------------------------
-// STEP 1: Register the Descope SDK client
+// STEP 1: Register all Descope services
 // ---------------------------------------------------------------------------
-// The Descope .NET SDK (NuGet: Descope) provides session validation, token
-// refresh, and management APIs. We register it here so it can be injected
-// anywhere in the app. The only required setting is your Project ID, which
-// you can find in the Descope Console under Project Settings.
+// AddDescopeServices registers:
+//   - Strongly-typed DescopeOptions with startup validation (fail fast)
+//   - The Descope SDK client for session validation & refresh
+//   - An IHttpClientFactory-managed named client for the Management API
+//   - Session and app discovery services
 // ---------------------------------------------------------------------------
-var descopeProjectId = builder.Configuration["Descope:ProjectId"]!;
-builder.Services.AddDescopeClient(new DescopeClientOptions
-{
-    ProjectId = descopeProjectId
-});
+builder.Services.AddDescopeServices(builder.Configuration);
 
-// Register our thin wrapper around the Descope SDK for session operations
-// (validate, refresh, logout) and the app-discovery service that fetches
-// tenant SSO apps from the Descope Management API.
-builder.Services.AddScoped<DescopeDemo.Web.Services.IDescopeSessionService, DescopeDemo.Web.Services.DescopeSessionService>();
-builder.Services.AddDescopeAppServices();
-
-// ---------------------------------------------------------------------------
-// STEP 2: Configure authentication — two modes to choose from
-// ---------------------------------------------------------------------------
-// This demo supports two validation strategies (set in appsettings.json):
-//
-//   "JwtBearer"   — Standard ASP.NET Core JWT Bearer authentication.
-//                    Descope issues standard JWTs, so this works out of the box
-//                    with Microsoft's built-in middleware. No Descope SDK needed
-//                    at validation time — just configure issuer & audience.
-//
-//   "DescopeSdk"  — Uses the Descope SDK's ValidateSessionAsync() directly via
-//                    a custom AuthenticationHandler. Useful if you want to use
-//                    Descope-specific features like permissions or step-up auth.
-//
-// Both modes read the session JWT from the "DS" cookie. The JwtBearer mode
-// relies on CookieToAuthHeaderMiddleware to copy the cookie into a Bearer
-// header (since JwtBearer middleware only reads the Authorization header).
-// ---------------------------------------------------------------------------
+var descopeProjectId = builder.Configuration["Descope:ProjectId"] ?? "";
 var validationMode = builder.Configuration["Authentication:ValidationMode"] ?? "JwtBearer";
 
 if (validationMode == "JwtBearer")
@@ -131,6 +104,15 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+    context.Response.Headers.Append("X-Frame-Options", "DENY");
+    context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+    await next();
+});
+
 app.UseStaticFiles();
 app.UseRouting();
 

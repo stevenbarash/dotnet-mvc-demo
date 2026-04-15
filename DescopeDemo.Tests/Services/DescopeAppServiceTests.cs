@@ -9,7 +9,7 @@ using Xunit;
 
 namespace DescopeDemo.Tests.Services;
 
-public class DescopeAppServiceTests
+public sealed class DescopeAppServiceTests
 {
     private static IConfiguration BuildConfig(string projectId = "proj123", string managementKey = "mgmtkey")
     {
@@ -282,7 +282,7 @@ public class DescopeAppServiceTests
     }
 }
 
-public class FakeHttpMessageHandler : HttpMessageHandler
+public sealed class FakeHttpMessageHandler : HttpMessageHandler
 {
     private readonly Dictionary<string, HttpResponseMessage> _responses;
 
