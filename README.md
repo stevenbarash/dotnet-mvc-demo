@@ -78,14 +78,47 @@ Browser                         ASP.NET Core                        Descope
 | [`Middleware/DescopeSdkAuthHandler.cs`](DescopeDemo.Web/Middleware/DescopeSdkAuthHandler.cs) | Alternative auth handler using the Descope SDK directly instead of JwtBearer |
 | [`Services/DescopeSessionService.cs`](DescopeDemo.Web/Services/DescopeSessionService.cs) | Wraps the Descope SDK for session validation, refresh, and logout |
 | [`Services/DescopeAppService.cs`](DescopeDemo.Web/Services/DescopeAppService.cs) | Fetches tenant SSO apps from the Descope Management API |
-| [`appsettings.json`](DescopeDemo.Web/appsettings.json) | Two settings: `Descope:ProjectId` and `Authentication:ValidationMode` |
+| [`appsettings.json`](DescopeDemo.Web/appsettings.json) | `Descope:ProjectId`, and `Authentication:ValidationMode` (`"JwtBearer"` or `"DescopeSdk"`) to toggle between Microsoft's JWT libraries and Descope's SDK |
 
-### Two Validation Modes
+### Two Integration Options — Choose Your Validation Mode
 
-Set `Authentication:ValidationMode` in `appsettings.json`:
+This demo ships with **two fully independent ways** to validate Descope session tokens, controlled by a single config toggle in `appsettings.json`:
 
-- **`JwtBearer`** — Uses ASP.NET Core's built-in JWT middleware. Descope issues standard JWTs, so no Descope-specific code is needed at validation time. Ideal when migrating an existing codebase to Descope — swap the identity provider with minimal code changes while keeping familiar .NET auth patterns.
-- **`DescopeSdk`** (recommended for new projects) — Uses the Descope SDK's `ValidateSessionAsync()` via a custom `AuthenticationHandler`. Provides access to Descope-specific features like permissions, step-up auth, and richer session management.
+```json
+{
+  "Authentication": {
+    "ValidationMode": "JwtBearer"   // or "DescopeSdk"
+  }
+}
+```
+
+Change the value and restart the app — no code changes required. The Dashboard page shows which mode is active.
+
+#### Option 1: `JwtBearer` — Microsoft's Built-in Libraries (default)
+
+Uses [`Microsoft.AspNetCore.Authentication.JwtBearer`](https://www.nuget.org/packages/Microsoft.AspNetCore.Authentication.JwtBearer) — the same middleware you'd use with any OIDC provider. Descope issues standard, OIDC-compliant JWTs, so ASP.NET Core validates them natively via JWKS discovery. No Descope-specific code runs at validation time.
+
+- **How it works:** `CookieToAuthHeaderMiddleware` copies the `DS` session cookie into the `Authorization: Bearer` header, then ASP.NET Core's JwtBearer handler validates signature, issuer, audience, and expiration using keys fetched from Descope's OIDC discovery endpoint.
+- **Best for:** Teams migrating existing .NET apps to Descope, microservices that already use JwtBearer, or environments where you want zero vendor-specific dependencies in your auth pipeline.
+
+#### Option 2: `DescopeSdk` — Descope's .NET SDK
+
+Uses the [Descope .NET SDK](https://www.nuget.org/packages/Descope) (`ValidateSessionAsync()`) via a custom `AuthenticationHandler`. The handler reads the `DS` cookie directly — no cookie-to-header middleware needed.
+
+- **How it works:** `DescopeSdkAuthHandler` reads the session cookie, calls `_descopeClient.Auth.ValidateSessionAsync(sessionJwt)`, and maps the Descope token claims into a standard `ClaimsPrincipal`. Controllers still use `[Authorize]` and `User.Identity` as normal.
+- **Best for:** New projects that want access to Descope-specific features (permissions, step-up auth, richer session metadata), or multi-framework teams wanting consistent validation behavior across React/Node/.NET.
+
+#### Side-by-Side Comparison
+
+| Aspect | `JwtBearer` | `DescopeSdk` |
+|--------|-------------|--------------|
+| Validation library | `Microsoft.AspNetCore.Authentication.JwtBearer` | `Descope` .NET SDK |
+| Cookie-to-header middleware | Required (`CookieToAuthHeaderMiddleware`) | Not needed |
+| Descope SDK at validation time | Not used | Required |
+| Configuration | Authority + Issuer + Audience | Just Project ID |
+| OIDC-standard tooling compatible | Yes | N/A |
+| Access to Descope-specific features | Via standard JWT claims only | Via SDK Token object (permissions, step-up, etc.) |
+| Vendor lock-in at validation layer | None — standard OIDC | Descope SDK dependency |
 
 ### Cookie Strategy
 
@@ -155,7 +188,7 @@ In **DescopeSdk mode**, the [`DescopeSdkAuthHandler`](DescopeDemo.Web/Middleware
 ## Key Features
 
 - **Descope Flows** — `sign-up-or-in-passwords` flow embedded via the `<descope-wc>` Web Component — zero custom login UI code
-- **Dual Validation** — Toggle between JwtBearer middleware and Descope SDK with a single config change
+- **Dual Validation** — Toggle between Microsoft's JwtBearer middleware and Descope's .NET SDK with a single `appsettings.json` change (`Authentication:ValidationMode`)
 - **Tenant SSO App Tiles** — Dashboard discovers and displays a tenant's SSO apps from the Descope Management API with IdP-initiated SSO links
 - **Silent Token Refresh** — Middleware automatically refreshes expired sessions using the refresh token
 - **User Migration** — Bulk import users with bcrypt/PBKDF2/argon2 hashed passwords via the included CLI tool
