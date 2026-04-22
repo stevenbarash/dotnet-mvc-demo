@@ -21,3 +21,6 @@ obj/
 ## OS
 .DS_Store
 Thumbs.db
+
+## Docs (excluded from repo)
+/docs
